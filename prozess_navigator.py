@@ -82,28 +82,13 @@ prozess = {
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Debugging: Zeige die Abhängigkeiten jedes Schrittes
-        st.write(f"Überprüfe Schritt: {schritt}")
-        st.write(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")  # Zeige die Abhängigkeiten an
-
-        # Zeige die komplette 'erledigt' Liste
-        st.write(f"Erledigte Schritte (erledigt): {erledigt}")
-        
-        erledigte_abhaengigkeiten = [dep for dep in daten['abhaengig_von'] if dep in erledigt]
-        st.write(f"Erledigte Abhängigkeiten für {schritt}: {erledigte_abhaengigkeiten}")
-
-        alle_abhaengig_erledigt = all(dep in erledigt for dep in daten["abhaengig_von"])
-
-        # Zeige an, ob alle Abhängigkeiten erledigt sind
-        st.write(f"Alle Abhängigkeiten erledigt für {schritt}: {alle_abhaengig_erledigt}")
-        
+        # Sicherstellen, dass alle Abhängigkeiten erledigt sind, bevor der Schritt als To-Do erscheint
         if (
             daten["typ"] != "lieferung"  # Keine Lieferungen
             and schritt not in erledigt  # Der Schritt wurde noch nicht erledigt
-            and alle_abhaengig_erledigt  # Alle abhängigen Schritte müssen erledigt sein
+            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle abhängigen Schritte müssen erledigt sein
         ):
             naechste.append(schritt)
-    
     return naechste
 
 # ===================
