@@ -1,5 +1,5 @@
 import streamlit as st
-from graphviz import Digraph
+from streamlit_cytoscape import cyto
 
 # ===================
 # Prozessstruktur
@@ -35,16 +35,30 @@ prozess = {
 }
 
 # ===================
-# Funktion für nächste Schritte (ohne Lieferungen)
+# Interaktive Graph-Darstellung mit Cytoscape
 # ===================
-def finde_naechste_schritte(prozess, erledigt):
-    return [
-        schritt for schritt, daten in prozess.items()
-        # Lieferungen (typ "lieferung") nicht als To-Do listen
-        if daten["typ"] != "lieferung"
-        and schritt not in erledigt
-        and all(dep in erledigt for dep in daten["abhaengig_von"])
-    ]
+def build_elements(prozess):
+    elements = []
+    # Nodes
+    for schritt, daten in prozess.items():
+        elements.append({
+            "data": {"id": schritt, "label": schritt, "typ": daten["typ"]}
+        })
+    # Edges
+    for schritt, daten in prozess.items():
+        for dep in daten["abhaengig_von"]:
+            elements.append({
+                "data": {"source": dep, "target": schritt}
+            })
+    return elements
+
+# Cytoscape Style-Definition
+style = [
+    {"selector": 'node[typ="lieferung"]', "style": {"background-color": "purple"}},
+    {"selector": 'node[typ="zwischenschritt"]', "style": {"background-color": "blue"}},
+    {"selector": 'node[typ="endprodukt"]', "style": {"background-color": "turquoise"}},
+    {"selector": 'edge', "style": {"line-color": "gray"}}
+]
 
 # ===================
 # Streamlit UI
@@ -52,28 +66,46 @@ def finde_naechste_schritte(prozess, erledigt):
 st.set_page_config(page_title="Prozess-Navigator", layout="wide")
 st.title("📊 Prozessnavigator")
 
-view = st.sidebar.radio("Ansicht wählen:", ["Diagramm", "Checkliste"]);
+# Sidebar: Ansicht & erledigte Schritte
+view = st.sidebar.radio("Ansicht wählen:", ["Diagramm", "Checkliste"])
+if "erledigt" not in st.session_state:
+    st.session_state.erledigt = []
 
 if view == "Diagramm":
-    # Graphviz-Diagramm rendern
-    dot = Digraph()
-    # Knoten mit Farben nach Typ
-    farben = {"lieferung": "purple", "zwischenschritt": "blue", "endprodukt": "turquoise"}
-    for schritt, daten in prozess.items():
-        dot.node(schritt, schritt, style="filled", fillcolor=farben[daten["typ"]])
-        for dep in daten["abhaengig_von"]:
-            dot.edge(dep, schritt)
-    st.graphviz_chart(dot)
+    st.write("**Klicke auf einen Knoten, um ihn als erledigt zu markieren.**")
+    elements = build_elements(prozess)
+    # render interactive cytoscape graph
+    selected = cyto.cytoscape(
+        id="cytoscape",
+        elements=elements,
+        layout={"name": "dagre"},
+        style={"width": "100%", "height": "600px"},
+        stylesheet=style,
+    )
+    # Wenn ein Node geklickt wird, füge zu erledigt hinzu
+    if selected and hasattr(selected, 'last_clicked_node'):
+        node_id = selected.last_clicked_node
+        if node_id not in st.session_state.erledigt and prozess[node_id]["typ"] != "lieferung":
+            st.session_state.erledigt.append(node_id)
+    # Anzeige der aktuell erledigten
+    st.sidebar.write("## Erledigte Schritte:")
+    for s in st.session_state.erledigt:
+        st.sidebar.markdown(f"- {s}")
 
 else:
     st.write("Markiere die Schritte, die du **bereits erledigt** hast:")
-    alle_schritte = list(prozess.keys())
-    erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte)
-    moeglich = finde_naechste_schritte(prozess, erledigt)
-
+    alle_schritte = [s for s,d in prozess.items() if d["typ"] != "lieferung"]
+    erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte, default=st.session_state.erledigt)
+    st.session_state.erledigt = erledigt
+    # nächste Schritte ohne Lieferungen
+    moeglich = [
+        schritt for schritt, daten in prozess.items()
+        if daten["typ"] != "lieferung"
+        and schritt not in st.session_state.erledigt
+        and all(dep in st.session_state.erledigt for dep in daten["abhaengig_von"])
+    ]
     st.divider()
     st.subheader("🔜 Mögliche nächste Schritte")
-
     if moeglich:
         st.success("Diese Schritte kannst du jetzt durchführen:")
         for schritt in moeglich:
