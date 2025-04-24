@@ -7,8 +7,8 @@ prozess = {
     # Lieferungen (werden nie als To-Do angezeigt, kommen aber als Voraussetzung rein)
     "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
     "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
-    "Schlüsselverzeichnis und IHB": {"typ": "lieferung", "abhaengig_von": []},
-    "MFB mit Spalten P-Q": {"typ": "lieferung", "abhaengig_von": []},
+    "Schlüsselverzeichnis und IHB": {"typ": "zwischenschritt", "abhaengig_von": []},
+    "MFB mit Spalten P-Q": {"typ": "zwischenschritt", "abhaengig_von": []},
     "Fachserien Tabellen vorbereiten": {"typ": "zwischenschritt", "abhaengig_von": []},
     "Ziel DSB von Destatis": {"typ": "lieferung", "abhaengig_von": []},
     "Variste prüf": {"typ": "lieferung", "abhaengig_von": []},
@@ -62,6 +62,8 @@ def main():
         st.session_state.arrived = []
     if "completed" not in st.session_state:
         st.session_state.completed = []
+    if "completed_endprodukte" not in st.session_state:
+        st.session_state.completed_endprodukte = []
 
     # Sidebar: Lieferungen markieren
     st.sidebar.header("🔌 Lieferungen")
@@ -70,15 +72,22 @@ def main():
         "Welche Lieferungen sind da?", lieferungen, default=st.session_state.arrived
     )
 
-    # Sidebar: Erledigte Schritte markieren
+    # Sidebar: Erledigte Schritte markieren (inklusive Endprodukte)
     st.sidebar.header("✅ Erledigte Schritte")
-    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung"]
+    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung" and d["typ"] != "endprodukt"]
     st.session_state.completed = st.sidebar.multiselect(
         "Welche Schritte sind erledigt?", schritte, default=st.session_state.completed
     )
 
-    # Kombiniere Lieferungen + erledigte Schritte als Erledigt-Voraussetzungen
-    erledigt = list(set(st.session_state.arrived + st.session_state.completed))
+    # Sidebar: Erledigte Endprodukte markieren
+    st.sidebar.header("✅ Erledigte Endprodukte")
+    endprodukte = [s for s, d in prozess.items() if d["typ"] == "endprodukt"]
+    st.session_state.completed_endprodukte = st.sidebar.multiselect(
+        "Welche Endprodukte sind erledigt?", endprodukte, default=st.session_state.completed_endprodukte
+    )
+
+    # Kombiniere Lieferungen + erledigte Schritte + erledigte Endprodukte als Erledigt-Voraussetzungen
+    erledigt = list(set(st.session_state.arrived + st.session_state.completed + st.session_state.completed_endprodukte))
 
     # Hauptbereich: nächste Schritte
     st.subheader("🔜 Nächste Schritte")
