@@ -80,111 +80,69 @@ prozess = {
 
  
 # ===================
- 
-# Logik: nächste Schritte ermitteln
- 
+# 2) Graphviz-Diagramm erzeugen
 # ===================
- 
+def render_graph(prozess):
+    dot = Digraph("Prozess", format="svg")
+    # Farben nach Typ
+    colors = {"lieferung": "#800080", "zwischenschritt": "#003366", "endprodukt": "#008B8B"}
+    # Knoten anlegen
+    for name, data in prozess.items():
+        dot.node(name, label=name, style="filled", fillcolor=colors[data["typ"]], fontcolor="white")
+    # Kanten anlegen
+    for name, data in prozess.items():
+        for dep in data["abhaengig_von"]:
+            dot.edge(dep, name)
+    return dot
+
+# ===================
+# 3) Logik: nächste Schritte ermitteln
+# ===================
 def finde_naechste_schritte(prozess, erledigt):
- 
     naechste = []
- 
     for schritt, daten in prozess.items():
- 
         if (
- 
-            daten["typ"] != "lieferung"
- 
-            and schritt not in erledigt
- 
-            and all(dep in erledigt for dep in daten["abhaengig_von"])
- 
+            schritt not in erledigt
+            and daten["typ"] != "lieferung"
+            and all(dep in erledigt for dep in daten["abhaengig_von"] )
         ):
- 
             naechste.append(schritt)
- 
     return naechste
- 
 
- 
 # ===================
- 
-# Streamlit-App
- 
+# 4) Streamlit-App
 # ===================
- 
 def main():
- 
     st.set_page_config(page_title="Prozessnavigator", layout="wide")
- 
     st.title("📊 Prozessnavigator")
- 
 
- 
-    # Initialisiere Session-State für Lieferungen und erledigte Schritte
- 
-    if "arrived" not in st.session_state:
- 
-        st.session_state.arrived = []
- 
-    if "completed" not in st.session_state:
- 
-        st.session_state.completed = []
- 
+    # Diagramm anzeigen
+    st.subheader("Prozessdiagramm")
+    dot = render_graph(prozess)
+    st.graphviz_chart(dot)
 
- 
-    # Sidebar: Lieferungen markieren
- 
-    st.sidebar.header("🔌 Lieferungen")
- 
-    lieferungen = [s for s, d in prozess.items() if d["typ"] == "lieferung"]
- 
-    st.session_state.arrived = st.sidebar.multiselect(
- 
-        "Welche Lieferungen sind da?", lieferungen, default=st.session_state.arrived
- 
-    )
- 
-
- 
-    # Sidebar: Erledigte Schritte markieren
- 
+    # Sidebar: erledigte Schritte
+    if "erledigt" not in st.session_state:
+        st.session_state.erledigt = []
     st.sidebar.header("✅ Erledigte Schritte")
- 
-    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung"]
- 
-    st.session_state.completed = st.sidebar.multiselect(
- 
-        "Welche Schritte sind erledigt?", schritte, default=st.session_state.completed
- 
+    # Auswahl in Sidebar
+    erledigt = st.sidebar.multiselect(
+        "Wähle erledigte Schritte:",
+        options=[n for n in prozess if prozess[n]["typ"] != "lieferung"],
+        default=st.session_state.erledigt
     )
- 
+    st.session_state.erledigt = erledigt
 
- 
-    # Kombiniere Lieferungen + erledigte Schritte als Erledigt-Voraussetzungen
- 
-    erledigt = list(set(st.session_state.arrived + st.session_state.completed))
- 
-
- 
-    # Hauptbereich: nächste Schritte
- 
+    # Nächste Schritte
     st.subheader("🔜 Nächste Schritte")
- 
-    naechste = finde_naechste_schritte(prozess, erledigt)
- 
+    naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
     if naechste:
- 
-        for schritt in naechste:
- 
-            st.write(f"- {schritt}")
- 
+        for s in naechste:
+            if st.button(f"Erledige {s}", key=s):
+                st.session_state.erledigt.append(s)
+                st.experimental_rerun()
     else:
- 
-        st.write("🎉 Keine weiteren Schritte möglich oder alles erledigt.")
- 
+        st.info("Keine weiteren Schritte – alles erledigt oder warte auf neue Lieferungen.")
 
- 
 if __name__ == "__main__":
- 
     main()
