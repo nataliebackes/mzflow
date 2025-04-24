@@ -82,21 +82,12 @@ prozess = {
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Debugging-Ausgabe für jede Abhängigkeit
-        print(f"Prüfe Schritt: {schritt}")
-        print(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")
-        print(f"Erledigte Abhängigkeiten für {schritt}: {[dep for dep in daten['abhaengig_von'] if dep in erledigt]}")
-        
-        # Wenn alle Abhängigkeiten erledigt sind, füge den Schritt hinzu
         if (
             daten["typ"] != "lieferung"  # Nur Zwischenschritte und Endprodukte
             and schritt not in erledigt  # Der Schritt ist noch nicht erledigt
             and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten erledigt?
         ):
-            print(f"Schritt {schritt} wird als nächster Schritt angezeigt.")
             naechste.append(schritt)
-        else:
-            print(f"Schritt {schritt} ist nicht bereit oder wurde bereits erledigt.")
     return naechste
 
 # ===================
