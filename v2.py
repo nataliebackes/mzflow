@@ -69,13 +69,13 @@ def plot_raster(grid, active_modules):
                 color = 'red' if name in active_modules else 'lightgray'
                 fig.add_shape(
                     type="rect",
-                    x0=j + 0.1, y0=-i - 0.1,  # Abstand hinzufügen
-                    x1=j + 0.9, y1=-(i + 1) + 0.9,  # Abstand hinzufügen
+                    x0=j * 1.5 + 0.2, y0=-i * 1.5 - 0.2,  # Abstand zwischen den Modulen
+                    x1=(j + 1) * 1.5 - 0.2, y1=-(i + 1) * 1.5 + 0.2,  # Abstand zwischen den Modulen
                     line=dict(color="black", width=2),
                     fillcolor=color
                 )
                 fig.add_annotation(
-                    x=(j + 0.5), y=-(i + 0.5),
+                    x=(j * 1.5 + (j + 1) * 1.5) / 2, y=(-(i + 0.5)),
                     text=name,
                     showarrow=False,
                     font=dict(size=12),
@@ -90,8 +90,8 @@ def plot_raster(grid, active_modules):
             
             # Die Pfeile an den Modulen vorbeigehen lassen
             fig.add_annotation(
-                x=source_pos[1] + 0.5, y=-source_pos[0] - 0.9,
-                ax=target_pos[1] + 0.5, ay=-target_pos[0] - 0.9,
+                x=source_pos[1] * 1.5 + 0.5, y=-source_pos[0] * 1.5 - 1,
+                ax=target_pos[1] * 1.5 + 0.5, ay=-target_pos[0] * 1.5 - 1,
                 axref="x1", ayref="y1", xref="x1", yref="y1",
                 showarrow=True,
                 arrowhead=2,
@@ -104,7 +104,7 @@ def plot_raster(grid, active_modules):
     fig.update_layout(
         xaxis=dict(showgrid=False, zeroline=False),
         yaxis=dict(showgrid=False, zeroline=False),
-        width=800, height=600,
+        width=1000, height=700,
         title="Modulübersicht",
         showlegend=False
     )
