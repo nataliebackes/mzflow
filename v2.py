@@ -1,11 +1,21 @@
-import streamlit as st
+import dash
+from dash import dcc, html, Input, Output, State
+import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
-# Layout und Titel
-st.set_page_config(layout="wide")
-st.title("Interaktive Modulübersicht")
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# Deine Modul-Daten
+# Raster-Layout
+grid = [
+    ["MFB von Herter", "Fragebögen", "Ziel DSB von Destatis", "Variste prüf", "Metadatenreport", "Testdaten", "Testdaten", ""],
+    ["MFB Spalten A-M + Operatoren", "MFB mit Spalten P-Q", "", "Vergröberungen + Korrekturen", "Metadatenreport final", "Inhaltliche Prüfung", "Missingdefinitionen", "Missy Texte"],
+    ["", "Schlüsselverzeichnis und IHB", "Ziel DSB", "DHB Kommentare 2", "Tabelle Erhebungsprogramme", "Technische Prüfung", "Tools", "Missy Veröffentlichung"],
+    ["MFB", "", "", "", "", "DHB", "", "Missy Variablenmatrix"],
+    ["DHB Kommentare 1", "Routinen für Filtermissings an IT NRW", "ZP Matrix + Thematische Liste", "", "", "", "", ""],
+    ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "", ""]
+]
+
+# Modulinformationen
 module_data = {
     "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
     "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
@@ -36,82 +46,130 @@ module_data = {
     "Fachserien Tabellen vorbereiten": {"typ": "zwischenschritt", "abhaengig_von": []}
 }
 
-# Interaktive Modulauswahl
-if "active_modules" not in st.session_state:
-    st.session_state.active_modules = set()
+all_modules = [m for row in grid for m in row if m]
 
-st.markdown("### Wählen Sie die Module aus:")
-for name in module_data.keys():
-    checked = name in st.session_state.active_modules
-    if st.checkbox(name, value=checked, key=f"chk_{name}"):
-        st.session_state.active_modules.add(name)
-    else:
-        st.session_state.active_modules.discard(name)
+# Layout
+# Layout
+app.layout = dbc.Container([
+    html.H2("Mikrozensus SUF Prozess", className="text-center my-4"),
+    dbc.Row([
+        dbc.Col(dcc.Graph(id="module-graph", style={"height": "900px"}), md=9),
+        dbc.Col([
+            html.H5("📝 Zu erledigen"),
+            html.Ul(id="todo-list"),
+            html.H5("✅ Erledigt"),
+            html.Ul(id="done-list")
+        ], md=3),
+    ]),
+    dcc.Store(id="selected-modules", data=[])
+], fluid=True)
 
-# Raster-Grid mit 8 Spalten und 6 Zeilen
-grid = [
-    ["MFB von Herter", "Fragebögen", "Ziel DSB von Destatis", "Variste prüf", "Metadatenreport", "Testdaten", "Testdaten", ""],
-    ["MFB Spalten A-M + Operatoren", "MFB mit Spalten P-Q", "", "Vergröberungen + Korrekturen", "Metadatenreport final", "Inhaltliche Prüfung", "Missingdefinitionen", "Missy Texte"],
-    ["", "Schlüsselverzeichnis und IHB", "Ziel DSB", "DHB Kommentare 2", "Tabelle Erhebungsprogramme", "Technische Prüfung", "Tools", "Missy Veröffentlichung"],
-    ["MFB", "", "", "", "", "DHB", "", "Missy Variablenmatrix"],
-    ["DHB Kommentare 1", "Routinen für Filtermissings an IT NRW", "ZP Matrix + Thematische Liste", "", "", "", "", ""],
-    ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "", ""]
-]
-
-# Plotly-Diagramm generieren
-def plot_raster(grid, active_modules):
+# Grafik zeichnen
+@app.callback(
+    Output("module-graph", "figure"),
+    Input("selected-modules", "data")
+)
+def draw_graph(selected_modules):
     fig = go.Figure()
+    spacing_x, spacing_y = 250, 120
+    node_positions = {}
 
-    # Module als Rechtecke in Plotly einfügen
-    for i, row in enumerate(grid):
-        for j, name in enumerate(row):
-            if name:
-                color = 'red' if name in active_modules else 'lightgray'
-                fig.add_shape(
-                    type="rect",
-                    x0=j * 2 + 0.5, y0=-i * 2 - 0.5,  # Abstand zwischen den Modulen
-                    x1=(j + 1) * 2 - 0.5, y1=-(i + 1) * 2 + 0.5,  # Abstand zwischen den Modulen
-                    line=dict(color="black", width=2),
-                    fillcolor=color
-                )
-                # Text zentriert im Rechteck
-                fig.add_annotation(
-                    x=(j * 2 + (j + 1) * 2) / 2, y=(-(i + 0.5)),
-                    text=name,
-                    showarrow=False,
-                    font=dict(size=12),
-                    align="center",
-                    valign="middle"  # Text vertikal zentrieren
-                )
+    for row_idx, row in enumerate(reversed(grid)):
+        for col_idx, name in enumerate(row):
+            if name == "":
+                continue
+            x = col_idx * spacing_x
+            y = row_idx * spacing_y
+            node_positions[name] = (x, y)
 
-    # Pfeile für Abhängigkeiten
+            color = "#ffcccc" if name in selected_modules else "#ffffff"
+
+            fig.add_shape(type="rect",
+                          x0=x-80, y0=y-30, x1=x+80, y1=y+30,
+                          line=dict(color="red" if name in selected_modules else "#333"),
+                          fillcolor=color, layer="below")
+
+            fig.add_trace(go.Scatter(
+                x=[x], y=[y],
+                text=[name],
+                mode="text",
+                hoverinfo="text",
+                textposition="middle center",
+                textfont=dict(size=11),
+                name=name,
+                customdata=[name],
+                showlegend=False
+            ))
+
     for target, info in module_data.items():
         for source in info["abhaengig_von"]:
-            source_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == source)
-            target_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == target)
-            
-            # Pfeile an den Modulen vorbeigehen lassen
-            fig.add_annotation(
-                x=source_pos[1] * 2 + 1, y=-source_pos[0] * 2 - 1,
-                ax=target_pos[1] * 2 + 1, ay=-target_pos[0] * 2 - 1,
-                axref="x1", ayref="y1", xref="x1", yref="y1",
-                showarrow=True,
-                arrowhead=2,
-                arrowsize=1,
-                arrowwidth=2,
-                arrowcolor="red"
-            )
+            if source in node_positions and target in node_positions:
+                x0, y0 = node_positions[source]
+                x1, y1 = node_positions[target]
+                arrow_color = "red" if source in selected_modules else "#888"
+                fig.add_annotation(
+                    ax=x0, ay=y0,
+                    x=x1, y=y1,
+                    xref="x", yref="y",
+                    axref="x", ayref="y",
+                    showarrow=True,
+                    arrowhead=2,
+                    arrowsize=1,
+                    arrowwidth=1.5,
+                    arrowcolor=arrow_color
+                )
 
-    # Layout für die Anzeige
     fig.update_layout(
-        xaxis=dict(showgrid=False, zeroline=False),
-        yaxis=dict(showgrid=False, zeroline=False),
-        width=1000, height=700,
-        title="Modulübersicht",
-        showlegend=False
+        margin=dict(l=20, r=20, t=20, b=20),
+        plot_bgcolor="#f8f9fa",
+        paper_bgcolor="#f8f9fa",
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        clickmode='event+select'
     )
-
     return fig
 
-# Plotly-Grafik anzeigen
-st.plotly_chart(plot_raster(grid, st.session_state.active_modules))
+# Klickverarbeitung – Mehrfachauswahl
+@app.callback(
+    Output("selected-modules", "data", allow_duplicate=True),
+    Input("module-graph", "clickData"),
+    State("selected-modules", "data"),
+    prevent_initial_call=True
+)
+def update_selection(clickData, selected_modules):
+    if not clickData:
+        return dash.no_update
+
+    clicked = clickData["points"][0]["customdata"]
+    if clicked in selected_modules:
+        selected_modules.remove(clicked)
+    else:
+        selected_modules.append(clicked)
+
+    return selected_modules
+
+# To-Do- und Erledigt-Liste aktualisieren
+@app.callback(
+    Output("todo-list", "children"),
+    Output("done-list", "children"),
+    Input("selected-modules", "data")
+)
+def update_lists(selected_modules):
+    done = [html.Li(name) for name in selected_modules if module_data[name]["typ"] != "lieferung"]
+
+    todo = []
+    for name in all_modules:
+        if name in selected_modules:
+            continue
+
+        info = module_data.get(name, {})
+        typ = info.get("typ", "")
+        deps = info.get("abhaengig_von", [])
+
+        if typ != "lieferung" and all(dep in selected_modules for dep in deps):
+            todo.append(html.Li(name))
+
+    return todo, done
+
+if __name__ == "__main__":
+    app.run(debug=True)
