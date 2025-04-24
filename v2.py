@@ -1,40 +1,42 @@
 import streamlit as st
 
-# Titel
-st.title("Interaktive Modul-Visualisierung")
+st.title("Interaktive Modul-Visualisierung (Mehrfachauswahl)")
 
-# Initialisierung der Session State
-if "active_module" not in st.session_state:
-    st.session_state.active_module = None
-
-# Modul-Buttons
-cols = st.columns(3)
+# Module definieren
 modules = ["A", "B", "C"]
 
-for i, mod in enumerate(modules):
-    if cols[i].button(f"Modul {mod}"):
-        st.session_state.active_module = mod
+# Initialisierung in session_state
+if "active_modules" not in st.session_state:
+    st.session_state.active_modules = set()
 
-# Definition der Graph-Struktur
+# Checkbox-UI
+st.markdown("### Wähle aktive Module:")
+for mod in modules:
+    checked = mod in st.session_state.active_modules
+    if st.checkbox(f"Modul {mod}", value=checked, key=f"chk_{mod}"):
+        st.session_state.active_modules.add(mod)
+    else:
+        st.session_state.active_modules.discard(mod)
+
+# Struktur der Pfeile
 edges = {
     "A": ["B", "C"],
     "B": [],
     "C": []
 }
 
-# Erzeugung des Graphviz-Codes
-def build_graph(active):
-    style = lambda node: f'color=red, penwidth=3' if node == active else ''
-    edge_style = lambda src: 'color=red, penwidth=2' if src == active else ''
-
+# Graph-Generierung
+def build_graph(active_modules):
+    style = lambda node: 'color=red, penwidth=3' if node in active_modules else ''
     graph = 'digraph G {\n'
     for node in modules:
         graph += f'  {node} [label="Modul {node}", shape=box, {style(node)}];\n'
     for src, targets in edges.items():
         for tgt in targets:
-            graph += f'  {src} -> {tgt} [{edge_style(src)}];\n'
+            edge_attr = 'color=red, penwidth=2' if src in active_modules else ''
+            graph += f'  {src} -> {tgt} [{edge_attr}];\n'
     graph += '}'
     return graph
 
-# Anzeige des Graphen
-st.graphviz_chart(build_graph(st.session_state.active_module))
+# Darstellung des Graphen
+st.graphviz_chart(build_graph(st.session_state.active_modules))
