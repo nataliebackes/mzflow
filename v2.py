@@ -69,8 +69,8 @@ def plot_raster(grid, active_modules):
                 color = 'red' if name in active_modules else 'lightgray'
                 fig.add_shape(
                     type="rect",
-                    x0=j, y0=-i,
-                    x1=j + 1, y1=-(i + 1),
+                    x0=j + 0.2, y0=-i - 0.2,  # Abstand hinzufügen
+                    x1=j + 0.8, y1=-(i + 1) + 0.8,  # Abstand hinzufügen
                     line=dict(color="black", width=2),
                     fillcolor=color
                 )
@@ -88,9 +88,10 @@ def plot_raster(grid, active_modules):
             source_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == source)
             target_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == target)
             
+            # Die Pfeile an den Modulen vorbeigehen lassen
             fig.add_annotation(
-                x=source_pos[1] + 0.5, y=-source_pos[0] - 0.5,
-                ax=target_pos[1] + 0.5, ay=-target_pos[0] - 0.5,
+                x=source_pos[1] + 0.5, y=-source_pos[0] - 0.8,
+                ax=target_pos[1] + 0.5, ay=-target_pos[0] - 0.8,
                 axref="x1", ayref="y1", xref="x1", yref="y1",
                 showarrow=True,
                 arrowhead=2,
