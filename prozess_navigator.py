@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_cytoscape import cyto
+from streamlit_agraph import agraph, Node, Edge, Config
 
 # ===================
 # Prozessstruktur
@@ -35,30 +35,35 @@ prozess = {
 }
 
 # ===================
-# Interaktive Graph-Darstellung mit Cytoscape
+# Helper: next steps
 # ===================
-def build_elements(prozess):
-    elements = []
-    # Nodes
-    for schritt, daten in prozess.items():
-        elements.append({
-            "data": {"id": schritt, "label": schritt, "typ": daten["typ"]}
-        })
-    # Edges
-    for schritt, daten in prozess.items():
-        for dep in daten["abhaengig_von"]:
-            elements.append({
-                "data": {"source": dep, "target": schritt}
-            })
-    return elements
+def finde_naechste_schritte(prozess, erledigt):
+    return [
+        schritt for schritt, daten in prozess.items()
+        if daten["typ"] != "lieferung"
+        and schritt not in erledigt
+        and all(dep in erledigt for dep in daten["abhaengig_von"])
+    ]
 
-# Cytoscape Style-Definition
-style = [
-    {"selector": 'node[typ="lieferung"]', "style": {"background-color": "purple"}},
-    {"selector": 'node[typ="zwischenschritt"]', "style": {"background-color": "blue"}},
-    {"selector": 'node[typ="endprodukt"]', "style": {"background-color": "turquoise"}},
-    {"selector": 'edge', "style": {"line-color": "gray"}}
-]
+# ===================
+# Build nodes & edges for AGraph
+# ===================
+nodes = []
+edges = []
+for schritt, daten in prozess.items():
+    color = "lightgray" if daten["typ"] == "lieferung" else ("lightblue" if daten["typ"] == "zwischenschritt" else "lightgreen")
+    nodes.append(Node(id=schritt, label=schritt, color=color, size=400))
+    for dep in daten["abhaengig_von"]:
+        edges.append(Edge(source=dep, target=schritt))
+
+config = Config(
+    height=600,
+    width="100%",
+    directed=True,
+    nodeHighlightBehavior=True,
+    highlightColor="#F7A7A6",
+    collapsible=True,
+)
 
 # ===================
 # Streamlit UI
@@ -66,28 +71,18 @@ style = [
 st.set_page_config(page_title="Prozess-Navigator", layout="wide")
 st.title("📊 Prozessnavigator")
 
-# Sidebar: Ansicht & erledigte Schritte
 view = st.sidebar.radio("Ansicht wählen:", ["Diagramm", "Checkliste"])
 if "erledigt" not in st.session_state:
     st.session_state.erledigt = []
 
 if view == "Diagramm":
     st.write("**Klicke auf einen Knoten, um ihn als erledigt zu markieren.**")
-    elements = build_elements(prozess)
-    # render interactive cytoscape graph
-    selected = cyto.cytoscape(
-        id="cytoscape",
-        elements=elements,
-        layout={"name": "dagre"},
-        style={"width": "100%", "height": "600px"},
-        stylesheet=style,
-    )
-    # Wenn ein Node geklickt wird, füge zu erledigt hinzu
-    if selected and hasattr(selected, 'last_clicked_node'):
-        node_id = selected.last_clicked_node
-        if node_id not in st.session_state.erledigt and prozess[node_id]["typ"] != "lieferung":
-            st.session_state.erledigt.append(node_id)
-    # Anzeige der aktuell erledigten
+    selected = agraph(nodes=nodes, edges=edges, config=config)
+    if selected:
+        # selected is list of clicked node ids
+        for node_id in selected:
+            if node_id not in st.session_state.erledigt and prozess[node_id]["typ"] != "lieferung":
+                st.session_state.erledigt.append(node_id)
     st.sidebar.write("## Erledigte Schritte:")
     for s in st.session_state.erledigt:
         st.sidebar.markdown(f"- {s}")
@@ -97,13 +92,7 @@ else:
     alle_schritte = [s for s,d in prozess.items() if d["typ"] != "lieferung"]
     erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte, default=st.session_state.erledigt)
     st.session_state.erledigt = erledigt
-    # nächste Schritte ohne Lieferungen
-    moeglich = [
-        schritt for schritt, daten in prozess.items()
-        if daten["typ"] != "lieferung"
-        and schritt not in st.session_state.erledigt
-        and all(dep in st.session_state.erledigt for dep in daten["abhaengig_von"])
-    ]
+    moeglich = finde_naechste_schritte(prozess, st.session_state.erledigt)
     st.divider()
     st.subheader("🔜 Mögliche nächste Schritte")
     if moeglich:
