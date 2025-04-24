@@ -1,5 +1,9 @@
 import streamlit as st
+from graphviz import Digraph
 
+# ===================
+# Prozessstruktur
+# ===================
 prozess = {
     "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
     "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
@@ -30,28 +34,50 @@ prozess = {
     "Missy Veröffentlichung": {"typ": "endprodukt", "abhaengig_von": ["Missy Variablenmatrix", "Missy Texte"]},
 }
 
+# ===================
+# Funktion für nächste Schritte (ohne Lieferungen)
+# ===================
 def finde_naechste_schritte(prozess, erledigt):
     return [
         schritt for schritt, daten in prozess.items()
-        if schritt not in erledigt and all(dep in erledigt for dep in daten["abhaengig_von"])
+        # Lieferungen (typ "lieferung") nicht als To-Do listen
+        if daten["typ"] != "lieferung"
+        and schritt not in erledigt
+        and all(dep in erledigt for dep in daten["abhaengig_von"])
     ]
 
+# ===================
+# Streamlit UI
+# ===================
 st.set_page_config(page_title="Prozess-Navigator", layout="wide")
 st.title("📊 Prozessnavigator")
-st.write("Markiere die Schritte, die du **bereits erledigt** hast:")
 
-alle_schritte = list(prozess.keys())
-erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte)
+view = st.sidebar.radio("Ansicht wählen:", ["Diagramm", "Checkliste"]);
 
-moeglich = finde_naechste_schritte(prozess, erledigt)
+if view == "Diagramm":
+    # Graphviz-Diagramm rendern
+    dot = Digraph()
+    # Knoten mit Farben nach Typ
+    farben = {"lieferung": "purple", "zwischenschritt": "blue", "endprodukt": "turquoise"}
+    for schritt, daten in prozess.items():
+        dot.node(schritt, schritt, style="filled", fillcolor=farben[daten["typ"]])
+        for dep in daten["abhaengig_von"]:
+            dot.edge(dep, schritt)
+    st.graphviz_chart(dot)
 
-st.divider()
-st.subheader("🔜 Mögliche nächste Schritte")
-
-if moeglich:
-    st.success("Diese Schritte kannst du jetzt durchführen:")
-    for schritt in moeglich:
-        typ = prozess[schritt]["typ"]
-        st.markdown(f"✅ **{schritt}** *(Typ: {typ})*")
 else:
-    st.info("Keine weiteren Schritte möglich – entweder alles erledigt oder Abhängigkeiten fehlen.")
+    st.write("Markiere die Schritte, die du **bereits erledigt** hast:")
+    alle_schritte = list(prozess.keys())
+    erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte)
+    moeglich = finde_naechste_schritte(prozess, erledigt)
+
+    st.divider()
+    st.subheader("🔜 Mögliche nächste Schritte")
+
+    if moeglich:
+        st.success("Diese Schritte kannst du jetzt durchführen:")
+        for schritt in moeglich:
+            typ = prozess[schritt]["typ"]
+            st.markdown(f"✅ **{schritt}** *(Typ: {typ})*")
+    else:
+        st.info("Keine weiteren Schritte möglich – entweder alles erledigt oder Abhängigkeiten fehlen.")
