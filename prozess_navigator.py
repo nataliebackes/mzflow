@@ -46,8 +46,8 @@ def finde_naechste_schritte(prozess, erledigt):
         # nicht schon erledigt, kein Lieferungstyp und alle Abhängigkeiten erfüllt?
         if (
             schritt not in erledigt
-            and daten["typ"] != "lieferung"
-            and all(dep in erledigt for dep in daten["abhaengig_von"])
+            and daten["typ"] != "lieferung"  # Nur Zwischenschritte & Endprodukte
+            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten erfüllt
         ):
             naechste.append(schritt)
     return naechste
@@ -62,10 +62,10 @@ def main():
     if "erledigt" not in st.session_state:
         st.session_state.erledigt = []
 
-    # Sidebar: Auswahl von Lieferungen und erledigten Schritten
+    # Sidebar: Auswahl von erledigten Schritten
     st.sidebar.header("✅ Markiere erledigte Schritte")
     
-    # Auswahl der erledigten Schritte
+    # Auswahl der erledigten Schritte (ohne Lieferungen)
     erledigte_schritte = st.sidebar.multiselect(
         "Welche Schritte wurden bereits erledigt?",
         options=[step for step in prozess if prozess[step]["typ"] != "lieferung"],
@@ -75,7 +75,7 @@ def main():
     # Speichern der Auswahl im Session-State
     st.session_state.erledigt = erledigte_schritte
 
-    # Sidebar: Auswahl von Lieferungen (nur zum Markieren)
+    # Sidebar: Auswahl von Lieferungen (die eingetroffen sind)
     lieferungen = [step for step in prozess if prozess[step]["typ"] == "lieferung"]
     selected_lieferungen = st.sidebar.multiselect(
         "Markiere Lieferungen, die eingetroffen sind",
