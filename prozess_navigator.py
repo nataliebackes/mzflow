@@ -75,20 +75,24 @@ prozess = {
 "Missy Veröffentlichung":            {"typ": "endprodukt",     "abhaengig_von": ["Missy Variablenmatrix","Missy Texte"]},
  
 }
-
 # ===================
 # Logik: nächste Schritte ermitteln
 # ===================
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Debugging: Zeige die Schritte und ihre Abhängigkeiten
+        # Debugging: Zeige die Abhängigkeiten jedes Schrittes
         st.write(f"Überprüfe Schritt: {schritt}")
-        st.write(f"Abhängigkeiten: {daten['abhaengig_von']}")  # Zeige die Abhängigkeiten an
-        
-        # Debugging: Überprüfe, ob alle Abhängigkeiten erledigt sind
+        st.write(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")  # Zeige die Abhängigkeiten an
+
+        # Debugging: Überprüfe, welche Abhängigkeiten erledigt sind
+        erledigte_abhaengigkeiten = [dep for dep in daten['abhaengig_von'] if dep in erledigt]
+        st.write(f"Erledigte Abhängigkeiten für {schritt}: {erledigte_abhaengigkeiten}")
+
         alle_abhaengig_erledigt = all(dep in erledigt for dep in daten["abhaengig_von"])
-        st.write(f"Alle Abhängigkeiten erledigt: {alle_abhaengig_erledigt}")
+
+        # Zeige an, ob alle Abhängigkeiten erledigt sind
+        st.write(f"Alle Abhängigkeiten erledigt für {schritt}: {alle_abhaengig_erledigt}")
         
         if (
             daten["typ"] != "lieferung"  # Keine Lieferungen
@@ -97,7 +101,6 @@ def finde_naechste_schritte(prozess, erledigt):
         ):
             naechste.append(schritt)
     
-    # Rückgabe der nächsten Schritte
     return naechste
 
 # ===================
