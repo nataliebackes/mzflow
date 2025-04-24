@@ -30,7 +30,7 @@ prozess = {
 "Missy Texte":                       {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
 "Metadatenreport final":             {"typ": "endprodukt",     "abhaengig_von": ["Metadatenreport"]},
 "Tabelle Erhebungsprogramme":        {"typ": "endprodukt",     "abhaengig_von": ["Metadatenreport"]},
-"Inhaltliche Prüfung":               {"typ": "endprodukt",     "abhaengig_von": ["Testdaten"],"Fachserien Tabellen vorbereiten"},
+"Inhaltliche Prüfung":               {"typ": "endprodukt",     "abhaengig_von": ["Testdaten","Fachserien Tabellen vorbereiten"},
 "Technische Prüfung":                {"typ": "endprodukt",     "abhaengig_von": ["Testdaten"]},
 "DHB":                               {"typ": "endprodukt",     "abhaengig_von": ["Testdaten","DHB Kommentare 2", "DHB Kommentare 1"]},
 "Missy Variablenmatrix":             {"typ": "endprodukt",     "abhaengig_von": ["ZP Matrix + Thematische Liste"]},
