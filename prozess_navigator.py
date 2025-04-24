@@ -1,4 +1,5 @@
 import streamlit as st
+from st_cytoscape import cytoscape
 
 # ===================
 # 1) Prozess-Definition
@@ -37,24 +38,23 @@ prozess = {
 }
 
 # ===================
-# 2) Generiere DOT-String ohne graphviz-Python
+# 2) Erzeuge Cytoscape-Elemente
 # ===================
-def generate_dot(prozess):
-    # Header
-    lines = ["digraph Prozess {", "  rankdir=LR;", "  node [style=filled, fontname=Helvetica];"]
-    # Node-Definitionen
-    color_map = {"lieferung": "purple", "zwischenschritt": "darkblue", "endprodukt": "turquoise"}
+def make_elements(prozess, erledigt):
+    elements = []
+    # Nodes
     for step, data in prozess.items():
-        fill = color_map[data["typ"]]
-        # Escape quotes
-        label = step.replace('"', '\\"')
-        lines.append(f'  "{label}" [fillcolor={fill}];')
-    # Kanten
+        elements.append({
+            "data": {"id": step, "label": step},
+            "classes": data["typ"],
+            "selected": step in erledigt,
+            "selectable": data["typ"] != "lieferung"
+        })
+    # Edges
     for step, data in prozess.items():
         for dep in data["abhaengig_von"]:
-            lines.append(f'  "{dep}" -> "{step}";')
-    lines.append("}")
-    return "\n".join(lines)
+            elements.append({"data": {"source": dep, "target": step, "id": f"{dep}->{step}"}})
+    return elements
 
 # ===================
 # 3) Logik: nächste Schritte
@@ -73,31 +73,36 @@ def finde_naechste_schritte(prozess, erledigt):
 def main():
     st.title("📊 Prozessnavigator")
 
-    # Session-State initialisieren
     if "erledigt" not in st.session_state:
         st.session_state.erledigt = []
 
-    #  Graph oben anzeigen
-    dot_source = generate_dot(prozess)
-    st.graphviz_chart(dot_source)
+    # Cytoscape Graph oben
+    elements = make_elements(prozess, st.session_state.erledigt)
+    stylesheet = [
+        {"selector": "node.leiferung", "style": {"background-color": "purple", "label": "data(label)"}},
+        {"selector": "node.zwischenschritt", "style": {"background-color": "darkblue", "label": "data(label)"}},
+        {"selector": "node.endprodukt", "style": {"background-color": "turquoise", "label": "data(label)"}},
+        {"selector": "edge", "style": {"curve-style": "bezier", "target-arrow-shape": "triangle"}}
+    ]
+    selected = cytoscape(
+        elements=elements,
+        stylesheet=stylesheet,
+        layout={"name": "breadthfirst", "directed": True, "padding": 10},
+        key="cytograph",
+        height="500px"
+    )
 
-    # Checkboxes unter dem Graph
-    st.subheader("✅ Markiere erledigte Schritte")
-    for step in [s for s in prozess if prozess[s]["typ"]!="lieferung"]:
-        checked = st.checkbox(step, value=(step in st.session_state.erledigt))
-        if checked and step not in st.session_state.erledigt:
-            st.session_state.erledigt.append(step)
-        if not checked and step in st.session_state.erledigt:
-            st.session_state.erledigt.remove(step)
+    # Update erledigt based on selection
+    st.session_state.erledigt = selected.get("nodes", [])
 
-    # nächste Schritte
+    # Nächste Schritte
     naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
     st.subheader("🔜 Nächste Schritte")
     if naechste:
         for s in naechste:
             st.write(f"- {s}")
     else:
-        st.write("🎉 Alle erledigt oder warte auf neue Lieferungen.")
+        st.write("🎉 Alle aktuelle Schritte erledigt oder warte auf neue Lieferungen.")
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
