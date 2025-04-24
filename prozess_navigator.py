@@ -39,7 +39,7 @@ prozess = {
  
 "MFB Spalten A-M + Operatoren":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB von Herter","Fragebögen"]},
  
-"MFB":                               {"typ": "zwischenschritt", "abhaengig_von": ["MFB mit Spalten P-Q","Schlüsselverzeichnis und IHB","Ziel DSB"]},
+"MFB":                               {"typ": "endprodukt", "abhaengig_von": ["MFB mit Spalten P-Q","Schlüsselverzeichnis und IHB","Ziel DSB"]},
  
 "Ziel DSB":                          {"typ": "endprodukt",     "abhaengig_von": ["Ziel DSB von Destatis","MFB Spalten P-Q","Fragebögen","Schlüsselverzeichnis und IHB"]},
  
@@ -89,6 +89,24 @@ def finde_naechste_schritte(prozess, erledigt):
             and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten sind erledigt
         ):
             naechste.append(schritt)
+    return naechste
+
+def finde_naechste_schritte(prozess, erledigt):
+    naechste = []
+    for schritt, daten in prozess.items():
+        # Überprüfen, ob der Schritt noch nicht erledigt ist und alle Abhängigkeiten erledigt sind
+        if (
+            daten["typ"] != "lieferung"  # Nur Zwischenschritte oder Endprodukte berücksichtigen
+            and schritt not in erledigt  # Der Schritt ist noch nicht erledigt
+        ):
+            # Debug-Ausgabe, um die Abhängigkeiten von "Ziel DSB" zu prüfen
+            if schritt == "Ziel DSB":
+                print(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")
+                print(f"Erledigte Abhängigkeiten für {schritt}: {[dep for dep in daten['abhaengig_von'] if dep in erledigt]}")
+                print(f"Alle Abhängigkeiten erledigt für {schritt}: {all(dep in erledigt for dep in daten['abhaengig_von'])}")
+            
+            if all(dep in erledigt for dep in daten["abhaengig_von"]):  # Alle Abhängigkeiten sind erledigt
+                naechste.append(schritt)
     return naechste
  
 # ===================
