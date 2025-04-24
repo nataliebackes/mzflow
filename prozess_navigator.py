@@ -19,9 +19,9 @@ prozess = {
  
 "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
  
-"Schlüsselverzeichnis und IHB":      {"typ": "zwischenschritt", "abhaengig_von": []},
+"Schlüsselverzeichnis und IHB":      {"typ": "lieferung", "abhaengig_von": []},
  
-"MFB mit Spalten P-Q":               {"typ": "zwischenschritt", "abhaengig_von": []},
+"MFB mit Spalten P-Q":               {"typ": "lieferung", "abhaengig_von": []},
  
 "Fachserien Tabellen vorbereiten":   {"typ": "zwischenschritt", "abhaengig_von": []},
  
