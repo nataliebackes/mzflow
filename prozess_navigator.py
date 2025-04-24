@@ -1,16 +1,16 @@
 import streamlit as st
 
 # ===================
-# 1) Prozess-Definition
+# Prozess-Definition
 # ===================
 prozess = {
-    # Lieferungen (werden nie als To-Do angezeigt)
-    "MFB von Herter":         {"typ": "lieferung",    "abhaengig_von": []},
-    "Fragebögen":             {"typ": "lieferung",    "abhaengig_von": []},
-    "Ziel DSB von Destatis":  {"typ": "lieferung",    "abhaengig_von": []},
-    "Variste prüf":           {"typ": "lieferung",    "abhaengig_von": []},
-    "Metadatenreport":        {"typ": "lieferung",    "abhaengig_von": []},
-    "Testdaten":              {"typ": "lieferung",    "abhaengig_von": []},
+    # Lieferungen (werden nie als To-Do angezeigt, kommen aber als Voraussetzung rein)
+    "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
+    "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
+    "Ziel DSB von Destatis": {"typ": "lieferung", "abhaengig_von": []},
+    "Variste prüf": {"typ": "lieferung", "abhaengig_von": []},
+    "Metadatenreport": {"typ": "lieferung", "abhaengig_von": []},
+    "Testdaten": {"typ": "lieferung", "abhaengig_von": []},
 
     # Zwischenschritte & Endprodukte
     "MFB Spalten A-M + Operatoren":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB von Herter"]},
@@ -38,46 +38,57 @@ prozess = {
 }
 
 # ===================
-# 2) Logik: nächste Schritte ermitteln
+# Logik: nächste Schritte ermitteln
 # ===================
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # nicht schon erledigt, kein Lieferungstyp und alle Abhängigkeiten erfüllt?
         if (
-            schritt not in erledigt
-            and daten["typ"] != "lieferung"
+            daten["typ"] != "lieferung"
+            and schritt not in erledigt
             and all(dep in erledigt for dep in daten["abhaengig_von"])
         ):
             naechste.append(schritt)
     return naechste
 
 # ===================
-# 3) Streamlit-App
+# Streamlit-App
 # ===================
 def main():
+    st.set_page_config(page_title="Prozessnavigator", layout="wide")
     st.title("📊 Prozessnavigator")
 
-    # Session-State initialisieren
-    if "erledigt" not in st.session_state:
-        st.session_state.erledigt = []
+    # Initialisiere Session-State für Lieferungen und erledigte Schritte
+    if "arrived" not in st.session_state:
+        st.session_state.arrived = []
+    if "completed" not in st.session_state:
+        st.session_state.completed = []
 
-    # Sidebar: erledigte Schritte
+    # Sidebar: Lieferungen markieren
+    st.sidebar.header("🔌 Lieferungen")
+    lieferungen = [s for s, d in prozess.items() if d["typ"] == "lieferung"]
+    st.session_state.arrived = st.sidebar.multiselect(
+        "Welche Lieferungen sind da?", lieferungen, default=st.session_state.arrived
+    )
+
+    # Sidebar: Erledigte Schritte markieren
     st.sidebar.header("✅ Erledigte Schritte")
-    for s in st.session_state.erledigt:
-        st.sidebar.write(f"- {s}")
+    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung"]
+    st.session_state.completed = st.sidebar.multiselect(
+        "Welche Schritte sind erledigt?", schritte, default=st.session_state.completed
+    )
 
-    # Berechne und zeige nächste Schritte
-    naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
-    st.header("🔜 Nächste Schritte")
+    # Kombiniere Lieferungen + erledigte Schritte als Erledigt-Voraussetzungen
+    erledigt = list(set(st.session_state.arrived + st.session_state.completed))
+
+    # Hauptbereich: nächste Schritte
+    st.subheader("🔜 Nächste Schritte")
+    naechste = finde_naechste_schritte(prozess, erledigt)
     if naechste:
         for schritt in naechste:
-            # Jeder Button braucht einen eigenen key
-            if st.button(f"Markiere '{schritt}' als erledigt", key=schritt):
-                st.session_state.erledigt.append(schritt)
-                st.experimental_rerun()
+            st.write(f"- {schritt}")
     else:
-        st.write("🎉 Alle aktuellen Schritte erledigt oder warte auf neue Lieferungen.")
+        st.write("🎉 Keine weiteren Schritte möglich oder alles erledigt.")
 
 if __name__ == "__main__":
     main()
