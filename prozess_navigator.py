@@ -1,16 +1,16 @@
 import streamlit as st
 
 # ===================
-# Prozess-Definition
+# 1) Prozess-Definition
 # ===================
 prozess = {
-    # Lieferungen (werden nie als To-Do angezeigt, kommen aber als Voraussetzung rein)
-    "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
-    "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
-    "Ziel DSB von Destatis": {"typ": "lieferung", "abhaengig_von": []},
-    "Variste prüf": {"typ": "lieferung", "abhaengig_von": []},
-    "Metadatenreport": {"typ": "lieferung", "abhaengig_von": []},
-    "Testdaten": {"typ": "lieferung", "abhaengig_von": []},
+    # Lieferungen (werden nie als To-Do angezeigt)
+    "MFB von Herter":         {"typ": "lieferung",    "abhaengig_von": []},
+    "Fragebögen":             {"typ": "lieferung",    "abhaengig_von": []},
+    "Ziel DSB von Destatis":  {"typ": "lieferung",    "abhaengig_von": []},
+    "Variste prüf":           {"typ": "lieferung",    "abhaengig_von": []},
+    "Metadatenreport":        {"typ": "lieferung",    "abhaengig_von": []},
+    "Testdaten":              {"typ": "lieferung",    "abhaengig_von": []},
 
     # Zwischenschritte & Endprodukte
     "MFB Spalten A-M + Operatoren":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB von Herter"]},
@@ -18,7 +18,7 @@ prozess = {
     "Schlüsselverzeichnis und IHB":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB mit Spalten P-Q"]},
     "MFB":                               {"typ": "zwischenschritt", "abhaengig_von": ["MFB Spalten A-M + Operatoren","Schlüsselverzeichnis und IHB"]},
     "DHB Kommentare 1":                  {"typ": "zwischenschritt", "abhaengig_von": ["MFB"]},
-    "Routinen für Filtermissings an IT NRW": {"typ": "zwischenschritt", "abhaengig_von": ["Schlüsselverzeichnis und IHB","MFB","Ziel DSB"]},
+    "Routinen für Filtermissings an IT NRW": {"typ": "zwischenschritt", "abhaengig_von": ["MFB", "Schlüsselverzeichnis und IHB"]},
     "Fachserien Tabellen vorbereiten":   {"typ": "zwischenschritt", "abhaengig_von": ["DHB Kommentare 1"]},
     "Vergröberungen + Korrekturen":      {"typ": "zwischenschritt", "abhaengig_von": ["Variste prüf"]},
     "DHB Kommentare 2":                  {"typ": "zwischenschritt", "abhaengig_von": ["Vergröberungen + Korrekturen","Ziel DSB"]},
@@ -38,57 +38,66 @@ prozess = {
 }
 
 # ===================
-# Logik: nächste Schritte ermitteln
+# 2) Logik: nächste Schritte ermitteln
 # ===================
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
+        # nicht schon erledigt, kein Lieferungstyp und alle Abhängigkeiten erfüllt?
         if (
-            daten["typ"] != "lieferung"
-            and schritt not in erledigt
+            schritt not in erledigt
+            and daten["typ"] != "lieferung"
             and all(dep in erledigt for dep in daten["abhaengig_von"])
         ):
             naechste.append(schritt)
     return naechste
 
 # ===================
-# Streamlit-App
+# 3) Streamlit-App
 # ===================
 def main():
-    st.set_page_config(page_title="Prozessnavigator", layout="wide")
     st.title("📊 Prozessnavigator")
 
-    # Initialisiere Session-State für Lieferungen und erledigte Schritte
-    if "arrived" not in st.session_state:
-        st.session_state.arrived = []
-    if "completed" not in st.session_state:
-        st.session_state.completed = []
+    # Session-State initialisieren
+    if "erledigt" not in st.session_state:
+        st.session_state.erledigt = []
 
-    # Sidebar: Lieferungen markieren
-    st.sidebar.header("🔌 Lieferungen")
-    lieferungen = [s for s, d in prozess.items() if d["typ"] == "lieferung"]
-    st.session_state.arrived = st.sidebar.multiselect(
-        "Welche Lieferungen sind da?", lieferungen, default=st.session_state.arrived
+    # Sidebar: Auswahl von Lieferungen und erledigten Schritten
+    st.sidebar.header("✅ Markiere erledigte Schritte")
+    
+    # Auswahl der erledigten Schritte
+    erledigte_schritte = st.sidebar.multiselect(
+        "Welche Schritte wurden bereits erledigt?",
+        options=[step for step in prozess if prozess[step]["typ"] != "lieferung"],
+        default=st.session_state.erledigt
     )
 
-    # Sidebar: Erledigte Schritte markieren
-    st.sidebar.header("✅ Erledigte Schritte")
-    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung"]
-    st.session_state.completed = st.sidebar.multiselect(
-        "Welche Schritte sind erledigt?", schritte, default=st.session_state.completed
+    # Speichern der Auswahl im Session-State
+    st.session_state.erledigt = erledigte_schritte
+
+    # Sidebar: Auswahl von Lieferungen (nur zum Markieren)
+    lieferungen = [step for step in prozess if prozess[step]["typ"] == "lieferung"]
+    selected_lieferungen = st.sidebar.multiselect(
+        "Markiere Lieferungen, die eingetroffen sind",
+        options=lieferungen,
+        default=[]
     )
+    
+    # Die ausgewählten Lieferungen zu den erledigten Schritten hinzufügen
+    st.session_state.erledigt.extend(selected_lieferungen)
+    st.session_state.erledigt = list(set(st.session_state.erledigt))  # Doppelte Einträge entfernen
 
-    # Kombiniere Lieferungen + erledigte Schritte als Erledigt-Voraussetzungen
-    erledigt = list(set(st.session_state.arrived + st.session_state.completed))
-
-    # Hauptbereich: nächste Schritte
-    st.subheader("🔜 Nächste Schritte")
-    naechste = finde_naechste_schritte(prozess, erledigt)
+    # Berechne und zeige nächste Schritte
+    naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
+    st.header("🔜 Nächste Schritte")
     if naechste:
         for schritt in naechste:
-            st.write(f"- {schritt}")
+            # Jeder Button braucht einen eigenen key
+            if st.button(f"Markiere '{schritt}' als erledigt", key=schritt):
+                st.session_state.erledigt.append(schritt)
+                st.experimental_rerun()
     else:
-        st.write("🎉 Keine weiteren Schritte möglich oder alles erledigt.")
+        st.write("🎉 Alle aktuellen Schritte erledigt oder warte auf neue Lieferungen.")
 
 if __name__ == "__main__":
     main()
