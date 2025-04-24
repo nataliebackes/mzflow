@@ -76,25 +76,28 @@ prozess = {
  
 }
 
+# ===================
+# Logik: nächste Schritte ermitteln
+# ===================
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Überprüfen, ob der Schritt nicht erledigt ist und alle Abhängigkeiten erledigt sind
+        # Debugging-Ausgabe für jede Abhängigkeit
+        print(f"Prüfe Schritt: {schritt}")
+        print(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")
+        print(f"Erledigte Abhängigkeiten für {schritt}: {[dep for dep in daten['abhaengig_von'] if dep in erledigt]}")
+        
+        # Wenn alle Abhängigkeiten erledigt sind, füge den Schritt hinzu
         if (
-            daten["typ"] != "lieferung"  # Nur Zwischenschritte oder Endprodukte berücksichtigen
+            daten["typ"] != "lieferung"  # Nur Zwischenschritte und Endprodukte
             and schritt not in erledigt  # Der Schritt ist noch nicht erledigt
+            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten erledigt?
         ):
-            # Debug-Ausgabe, um die Abhängigkeiten von "Ziel DSB" zu prüfen
-            if schritt == "Ziel DSB":
-                print(f"Abhängigkeiten für {schritt}: {daten['abhaengig_von']}")
-                print(f"Erledigte Abhängigkeiten für {schritt}: {[dep for dep in daten['abhaengig_von'] if dep in erledigt]}")
-                print(f"Alle Abhängigkeiten erledigt für {schritt}: {all(dep in erledigt for dep in daten['abhaengig_von'])}")
-            
-            # Überprüfe, ob alle Abhängigkeiten erledigt sind
-            if all(dep in erledigt for dep in daten["abhaengig_von"]):  # Alle Abhängigkeiten sind erledigt
-                naechste.append(schritt)
+            print(f"Schritt {schritt} wird als nächster Schritt angezeigt.")
+            naechste.append(schritt)
+        else:
+            print(f"Schritt {schritt} ist nicht bereit oder wurde bereits erledigt.")
     return naechste
-
 
 # ===================
 # Streamlit-App
