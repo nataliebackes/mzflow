@@ -7,8 +7,8 @@ prozess = {
     # Lieferungen (werden nie als To-Do angezeigt, kommen aber als Voraussetzung rein)
     "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
     "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
-    "Schlüsselverzeichnis und IHB": {"typ": "zwischenschritt", "abhaengig_von": []},
-    "MFB mit Spalten P-Q": {"typ": "zwischenschritt", "abhaengig_von": []},
+    "Schlüsselverzeichnis und IHB": {"typ": "lieferung", "abhaengig_von": []},
+    "MFB mit Spalten P-Q": {"typ": "lieferung", "abhaengig_von": []},
     "Fachserien Tabellen vorbereiten": {"typ": "zwischenschritt", "abhaengig_von": []},
     "Ziel DSB von Destatis": {"typ": "lieferung", "abhaengig_von": []},
     "Variste prüf": {"typ": "lieferung", "abhaengig_von": []},
