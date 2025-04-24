@@ -1,18 +1,18 @@
 import streamlit as st
-from streamlit_agraph import agraph, Node, Edge, Config
+from graphviz import Digraph
 
 # ===================
 # 1) Prozess-Definition
 # ===================
 prozess = {
-    # Lieferungen (werden nie als To-Do angezeigt)
+    # Lieferungen (lila)
     "MFB von Herter":         {"typ": "lieferung",    "abhaengig_von": []},
     "Fragebögen":             {"typ": "lieferung",    "abhaengig_von": []},
     "Ziel DSB von Destatis":  {"typ": "lieferung",    "abhaengig_von": []},
     "Variste prüf":           {"typ": "lieferung",    "abhaengig_von": []},
     "Metadatenreport":        {"typ": "lieferung",    "abhaengig_von": []},
     "Testdaten":              {"typ": "lieferung",    "abhaengig_von": []},
-    # Zwischenschritte & Endprodukte
+    # Zwischenschritte (dunkelblau)
     "MFB Spalten A-M + Operatoren":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB von Herter"]},
     "MFB mit Spalten P-Q":               {"typ": "zwischenschritt", "abhaengig_von": ["Fragebögen"]},
     "Schlüsselverzeichnis und IHB":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB mit Spalten P-Q"]},
@@ -25,6 +25,7 @@ prozess = {
     "Missingdefinitionen":               {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
     "Tools":                             {"typ": "zwischenschritt", "abhaengig_von": ["Missingdefinitionen"]},
     "Missy Texte":                       {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
+    # Endprodukte (türkis)
     "Ziel DSB":                          {"typ": "endprodukt",     "abhaengig_von": ["Ziel DSB von Destatis","MFB Spalten A-M + Operatoren","MFB mit Spalten P-Q","Fragebögen"]},
     "ZP Matrix + Thematische Liste":     {"typ": "endprodukt",     "abhaengig_von": ["Ziel DSB"]},
     "Metadatenreport final":             {"typ": "endprodukt",     "abhaengig_von": ["Metadatenreport"]},
@@ -37,69 +38,60 @@ prozess = {
 }
 
 # ===================
-# 2) Generiere Nodes & Edges für AGraph
+# 2) Erzeuge Graphviz-Digraph
 # ===================
-nodes = []
-edges = []
-
-for step, data in prozess.items():
-    # Farbe nach Typ
-    color = "#D3D3D3"
-    if data["typ"] == "lieferung": color = "#800080"  # lila
-    if data["typ"] == "zwischenschritt": color = "#00008B"  # dunkelblau
-    if data["typ"] == "endprodukt": color = "#40E0D0"  # türkis
-
-    # Node hinzufügen
-    nodes.append(Node(id=step, label=step, color=color))
-
-    # Kanten (Abhängigkeiten)
-    for dep in data["abhaengig_von"]:
-        edges.append(Edge(source=dep, target=step))
-
-# Config für AGraph
-config = Config(
-    width=800,
-    height=400,
-    directed=True,
-    nodeHighlightBehavior=True,
-    highlightColor="#F0A202"
-)
+def render_graph(prozess):
+    dot = Digraph(format="svg")
+    for step, data in prozess.items():
+        # wähle Farbe nach Typ
+        fill = {"lieferung":"#800080","zwischenschritt":"#00008B","endprodukt":"#40E0D0"}[data["typ"]]
+        dot.node(step, style="filled", fillcolor=fill)
+        for dep in data["abhaengig_von"]:
+            dot.edge(dep, step)
+    return dot
 
 # ===================
-# 3) Streamlit-App
+# 3) Logik: nächste Schritte
 # ===================
+def finde_naechste_schritte(prozess, erledigt):
+    return [
+        s for s,d in prozess.items()
+        if d["typ"]!="lieferung"
+        and s not in erledigt
+        and all(dep in erledigt for dep in d["abhaengig_von"])
+    ]
 
+# ===================
+# 4) Streamlit-App
+# ===================
 def main():
-    st.title("📊 Prozessnavigator mit interaktivem Graphen")
+    st.title("📊 Prozessnavigator")
 
     # Session-State initialisieren
     if "erledigt" not in st.session_state:
         st.session_state.erledigt = []
 
-    # Render interaktiven Graph und fange Klicks ab
-    selected = agraph(nodes=nodes, edges=edges, config=config)
-    if selected and selected not in st.session_state.erledigt:
-        st.session_state.erledigt.append(selected)
+    #  graph oben
+    dot = render_graph(prozess)
+    st.graphviz_chart(dot)
 
-    # Zeige erledigte Schritte
-    st.sidebar.header("✅ Erledigte Schritte")
-    for s in st.session_state.erledigt:
-        st.sidebar.write(f"- {s}")
+    # checkboxes unter dem Graph
+    st.subheader("✅ Markiere erledigte Schritte")
+    for step in [s for s in prozess if prozess[s]["typ"]!="lieferung"]:
+        checked = st.checkbox(step, value=(step in st.session_state.erledigt))
+        if checked and step not in st.session_state.erledigt:
+            st.session_state.erledigt.append(step)
+        if not checked and step in st.session_state.erledigt:
+            st.session_state.erledigt.remove(step)
 
-    # Berechne nächste Schritte
-    def finde_naechste_schritte(prozess, erledigt):
-        return [s for s, d in prozess.items()
-                if s not in erledigt
-                and d["typ"] != "lieferung"
-                and all(dep in erledigt for dep in d["abhaengig_von"])]
-
+    # nächste Schritte
     naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
-    st.header("🔜 Nächste Schritte")
+    st.subheader("🔜 Nächste Schritte")
     if naechste:
         for s in naechste:
             st.write(f"- {s}")
     else:
-        st.write("🎉 Alle aktuellen Schritte erledigt oder Warte auf neue Lieferungen.")
+        st.write("🎉 Alle erledigt oder warte auf neue Lieferungen.")
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
