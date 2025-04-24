@@ -39,9 +39,9 @@ prozess = {
  
 "MFB Spalten A-M + Operatoren":      {"typ": "zwischenschritt", "abhaengig_von": ["MFB von Herter","Fragebögen"]},
  
-"MFB":                               {"typ": "endprodukt", "abhaengig_von": ["MFB mit Spalten P-Q","Schlüsselverzeichnis und IHB","Ziel DSB"]},
+"MFB":                               {"typ": "zwischenschritt", "abhaengig_von": ["MFB mit Spalten P-Q","Schlüsselverzeichnis und IHB","Ziel DSB"]},
  
-"Ziel DSB":                          {"typ": "endprodukt",     "abhaengig_von": ["Ziel DSB von Destatis","MFB Spalten P-Q","Fragebögen","Schlüsselverzeichnis und IHB"]},
+"Ziel DSB":                          {"typ": "zwischenschritt",     "abhaengig_von": ["Ziel DSB von Destatis","MFB Spalten P-Q","Fragebögen","Schlüsselverzeichnis und IHB"]},
  
 "DHB Kommentare 1":                  {"typ": "zwischenschritt", "abhaengig_von": ["MFB"]},
  
