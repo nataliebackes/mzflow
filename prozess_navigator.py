@@ -82,20 +82,22 @@ prozess = {
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Debug-Ausgabe
+        # Debugging: Zeige die Schritte und ihre Abhängigkeiten
         st.write(f"Überprüfe Schritt: {schritt}")
-        st.write(f"Abhängigkeiten: {daten['abhaengig_von']}")
+        st.write(f"Abhängigkeiten: {daten['abhaengig_von']}")  # Zeige die Abhängigkeiten an
+        
+        # Debugging: Überprüfe, ob alle Abhängigkeiten erledigt sind
+        alle_abhaengig_erledigt = all(dep in erledigt for dep in daten["abhaengig_von"])
+        st.write(f"Alle Abhängigkeiten erledigt: {alle_abhaengig_erledigt}")
         
         if (
             daten["typ"] != "lieferung"  # Keine Lieferungen
             and schritt not in erledigt  # Der Schritt wurde noch nicht erledigt
-            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle abhängigen Schritte müssen erledigt sein
+            and alle_abhaengig_erledigt  # Alle abhängigen Schritte müssen erledigt sein
         ):
             naechste.append(schritt)
     
-    # Debug-Ausgabe
-    st.write(f"Gefundene nächste Schritte: {naechste}")
-    
+    # Rückgabe der nächsten Schritte
     return naechste
 
 # ===================
