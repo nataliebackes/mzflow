@@ -1,5 +1,4 @@
 import streamlit as st
-from st_cytoscape import cytoscape
 
 # ===================
 # 1) Prozess-Definition
@@ -37,72 +36,54 @@ prozess = {
     "Missy Veröffentlichung":            {"typ": "endprodukt",     "abhaengig_von": ["Missy Variablenmatrix","Missy Texte"]},
 }
 
-# ===================
-# 2) Erzeuge Cytoscape-Elemente
-# ===================
-def make_elements(prozess, erledigt):
-    elements = []
-    # Nodes
-    for step, data in prozess.items():
-        elements.append({
-            "data": {"id": step, "label": step},
-            "classes": data["typ"],
-            "selected": step in erledigt,
-            "selectable": data["typ"] != "lieferung"
-        })
-    # Edges
-    for step, data in prozess.items():
-        for dep in data["abhaengig_von"]:
-            elements.append({"data": {"source": dep, "target": step, "id": f"{dep}->{step}"}})
-    return elements
+# 2) Graphviz-DOT als String bauen
+def build_dot(prozess):
+    dot = ["digraph G {", "  rankdir=LR;"]
+    colors = {"lieferung":"purple","zwischenschritt":"darkblue","endprodukt":"turquoise"}
+    for n,d in prozess.items():
+        dot.append(f'  "{n}" [style=filled fillcolor={colors[d["typ"]]}];')
+        for p in d["abhaengig_von"]:
+            dot.append(f'  "{p}" -> "{n}";')
+    dot.append("}")
+    return "\n".join(dot)
 
-# ===================
-# 3) Logik: nächste Schritte
-# ===================
-def finde_naechste_schritte(prozess, erledigt):
-    return [
-        s for s,d in prozess.items()
-        if d["typ"]!="lieferung"
-        and s not in erledigt
-        and all(dep in erledigt for dep in d["abhaengig_von"] )
-    ]
+# 3) Nächste-Schritte-Logik
+def next_steps(prozess, done):
+    out=[]
+    for n,d in prozess.items():
+        if d["typ"]!="lieferung" and n not in done and all(p in done for p in d["abhaengig_von"]):
+            out.append(n)
+    return out
 
-# ===================
 # 4) Streamlit-App
-# ===================
 def main():
     st.title("📊 Prozessnavigator")
 
-    if "erledigt" not in st.session_state:
-        st.session_state.erledigt = []
+    # Session-State initialisieren
+    if "done" not in st.session_state:
+        st.session_state.done=[]
 
-    # Cytoscape Graph oben
-    elements = make_elements(prozess, st.session_state.erledigt)
-    stylesheet = [
-        {"selector": "node.leiferung", "style": {"background-color": "purple", "label": "data(label)"}},
-        {"selector": "node.zwischenschritt", "style": {"background-color": "darkblue", "label": "data(label)"}},
-        {"selector": "node.endprodukt", "style": {"background-color": "turquoise", "label": "data(label)"}},
-        {"selector": "edge", "style": {"curve-style": "bezier", "target-arrow-shape": "triangle"}}
-    ]
-    selected = cytoscape(
-        elements=elements,
-        stylesheet=stylesheet,
-        layout={"name": "breadthfirst", "directed": True, "padding": 10},
-        key="cytograph",
-        height="500px"
-    )
+    # oben: statischer Graph
+    dot = build_dot(prozess)
+    st.graphviz_chart(dot)
 
-    # Update erledigt based on selection
-    st.session_state.erledigt = selected.get("nodes", [])
+    # mittendrin: Checkboxen zum Anklicken
+    st.subheader("✅ Markiere erledigte Schritte")
+    for step in [s for s in prozess if prozess[s]["typ"]!="lieferung"]:
+        checked = st.checkbox(step, value=(step in st.session_state.done))
+        if checked and step not in st.session_state.done:
+            st.session_state.done.append(step)
+        if not checked and step in st.session_state.done:
+            st.session_state.done.remove(step)
 
-    # Nächste Schritte
-    naechste = finde_naechste_schritte(prozess, st.session_state.erledigt)
+    # unten: nächste Schritte
     st.subheader("🔜 Nächste Schritte")
+    naechste = next_steps(prozess, st.session_state.done)
     if naechste:
         for s in naechste:
             st.write(f"- {s}")
     else:
-        st.write("🎉 Alle aktuelle Schritte erledigt oder warte auf neue Lieferungen.")
+        st.write("🎉 Alle erledigt oder warte auf neue Lieferungen.")
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
