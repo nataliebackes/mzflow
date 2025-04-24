@@ -1,5 +1,4 @@
 import streamlit as st
-from graphviz import Digraph
 
 # ===================
 # 1) Prozess-Definition
@@ -38,17 +37,24 @@ prozess = {
 }
 
 # ===================
-# 2) Erzeuge Graphviz-Digraph
+# 2) Generiere DOT-String ohne graphviz-Python
 # ===================
-def render_graph(prozess):
-    dot = Digraph(format="svg")
+def generate_dot(prozess):
+    # Header
+    lines = ["digraph Prozess {", "  rankdir=LR;", "  node [style=filled, fontname=Helvetica];"]
+    # Node-Definitionen
+    color_map = {"lieferung": "purple", "zwischenschritt": "darkblue", "endprodukt": "turquoise"}
     for step, data in prozess.items():
-        # wähle Farbe nach Typ
-        fill = {"lieferung":"#800080","zwischenschritt":"#00008B","endprodukt":"#40E0D0"}[data["typ"]]
-        dot.node(step, style="filled", fillcolor=fill)
+        fill = color_map[data["typ"]]
+        # Escape quotes
+        label = step.replace('"', '\\"')
+        lines.append(f'  "{label}" [fillcolor={fill}];')
+    # Kanten
+    for step, data in prozess.items():
         for dep in data["abhaengig_von"]:
-            dot.edge(dep, step)
-    return dot
+            lines.append(f'  "{dep}" -> "{step}";')
+    lines.append("}")
+    return "\n".join(lines)
 
 # ===================
 # 3) Logik: nächste Schritte
@@ -58,7 +64,7 @@ def finde_naechste_schritte(prozess, erledigt):
         s for s,d in prozess.items()
         if d["typ"]!="lieferung"
         and s not in erledigt
-        and all(dep in erledigt for dep in d["abhaengig_von"])
+        and all(dep in erledigt for dep in d["abhaengig_von"] )
     ]
 
 # ===================
@@ -71,11 +77,11 @@ def main():
     if "erledigt" not in st.session_state:
         st.session_state.erledigt = []
 
-    #  graph oben
-    dot = render_graph(prozess)
-    st.graphviz_chart(dot)
+    #  Graph oben anzeigen
+    dot_source = generate_dot(prozess)
+    st.graphviz_chart(dot_source)
 
-    # checkboxes unter dem Graph
+    # Checkboxes unter dem Graph
     st.subheader("✅ Markiere erledigte Schritte")
     for step in [s for s in prozess if prozess[s]["typ"]!="lieferung"]:
         checked = st.checkbox(step, value=(step in st.session_state.erledigt))
