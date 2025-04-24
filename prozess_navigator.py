@@ -83,9 +83,9 @@ def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
         if (
-            daten["typ"] != "lieferung"
-            and schritt not in erledigt
-            and all(dep in erledigt for dep in daten["abhaengig_von"])
+            daten["typ"] != "lieferung"  # Keine Lieferungen
+            and schritt not in erledigt  # Der Schritt wurde noch nicht erledigt
+            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle abhängigen Schritte müssen erledigt sein
         ):
             naechste.append(schritt)
     return naechste
@@ -102,8 +102,6 @@ def main():
         st.session_state.arrived = []
     if "completed" not in st.session_state:
         st.session_state.completed = []
-    if "completed_endprodukte" not in st.session_state:
-        st.session_state.completed_endprodukte = []
 
     # Sidebar: Lieferungen markieren
     st.sidebar.header("🔌 Lieferungen")
@@ -112,22 +110,15 @@ def main():
         "Welche Lieferungen sind da?", lieferungen, default=st.session_state.arrived
     )
 
-    # Sidebar: Erledigte Schritte markieren (inklusive Endprodukte)
+    # Sidebar: Erledigte Schritte markieren
     st.sidebar.header("✅ Erledigte Schritte")
-    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung" and d["typ"] != "endprodukt"]
+    schritte = [s for s, d in prozess.items() if d["typ"] != "lieferung"]
     st.session_state.completed = st.sidebar.multiselect(
         "Welche Schritte sind erledigt?", schritte, default=st.session_state.completed
     )
 
-    # Sidebar: Erledigte Endprodukte markieren
-    st.sidebar.header("✅ Erledigte Endprodukte")
-    endprodukte = [s for s, d in prozess.items() if d["typ"] == "endprodukt"]
-    st.session_state.completed_endprodukte = st.sidebar.multiselect(
-        "Welche Endprodukte sind erledigt?", endprodukte, default=st.session_state.completed_endprodukte
-    )
-
-    # Kombiniere Lieferungen + erledigte Schritte + erledigte Endprodukte als Erledigt-Voraussetzungen
-    erledigt = list(set(st.session_state.arrived + st.session_state.completed + st.session_state.completed_endprodukte))
+    # Kombiniere Lieferungen + erledigte Schritte als Erledigt-Voraussetzungen
+    erledigt = list(set(st.session_state.arrived + st.session_state.completed))
 
     # Hauptbereich: nächste Schritte
     st.subheader("🔜 Nächste Schritte")
