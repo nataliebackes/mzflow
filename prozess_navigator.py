@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_agraph import agraph, Node, Edge, Config
 
 # ===================
 # Prozessstruktur
@@ -35,7 +34,7 @@ prozess = {
 }
 
 # ===================
-# Helper: next steps
+# Funktion: nächste Schritte
 # ===================
 def finde_naechste_schritte(prozess, erledigt):
     return [
@@ -46,59 +45,37 @@ def finde_naechste_schritte(prozess, erledigt):
     ]
 
 # ===================
-# Build nodes & edges for AGraph
-# ===================
-nodes = []
-edges = []
-for schritt, daten in prozess.items():
-    color = "lightgray" if daten["typ"] == "lieferung" else ("lightblue" if daten["typ"] == "zwischenschritt" else "lightgreen")
-    nodes.append(Node(id=schritt, label=schritt, color=color, size=400))
-    for dep in daten["abhaengig_von"]:
-        edges.append(Edge(source=dep, target=schritt))
-
-config = Config(
-    height=600,
-    width="100%",
-    directed=True,
-    nodeHighlightBehavior=True,
-    highlightColor="#F7A7A6",
-    collapsible=True,
-)
-
-# ===================
 # Streamlit UI
 # ===================
 st.set_page_config(page_title="Prozess-Navigator", layout="wide")
 st.title("📊 Prozessnavigator")
 
-view = st.sidebar.radio("Ansicht wählen:", ["Diagramm", "Checkliste"])
 if "erledigt" not in st.session_state:
     st.session_state.erledigt = []
 
-if view == "Diagramm":
-    st.write("**Klicke auf einen Knoten, um ihn als erledigt zu markieren.**")
-    selected = agraph(nodes=nodes, edges=edges, config=config)
-    if selected:
-        # selected is list of clicked node ids
-        for node_id in selected:
-            if node_id not in st.session_state.erledigt and prozess[node_id]["typ"] != "lieferung":
-                st.session_state.erledigt.append(node_id)
-    st.sidebar.write("## Erledigte Schritte:")
-    for s in st.session_state.erledigt:
-        st.sidebar.markdown(f"- {s}")
+# Sidebar: erledigte Schritte
+st.sidebar.header("✅ Erledigte Schritte")
+for schritt in list(st.session_state.erledigt):
+    if st.sidebar.button(f"Entferne: {schritt}", key=schritt):
+        st.session_state.erledigt.remove(schritt)
 
+# Sidebar: Diagramm-Links zum Klicken
+st.sidebar.header("🔗 Prozessdiagramm")
+for schritt, daten in prozess.items():
+    if daten["typ"] != "lieferung":
+        if st.sidebar.button(schritt, key=schritt+"btn"):
+            if schritt not in st.session_state.erledigt:
+                st.session_state.erledigt.append(schritt)
+
+# Hauptbereich: Checkliste und nächste Schritte
+st.subheader("Deine To-Dos")
+st.write("Klicke in der Sidebar auf einen Schritt, um ihn als erledigt hinzuzufügen oder zu entfernen.")
+
+moeglich = finde_naechste_schritte(prozess, st.session_state.erledigt)
+
+st.markdown("**Mögliche nächste Schritte:**")
+if moeglich:
+    for schritt in moeglich:
+        st.markdown(f"- {schritt}")
 else:
-    st.write("Markiere die Schritte, die du **bereits erledigt** hast:")
-    alle_schritte = [s for s,d in prozess.items() if d["typ"] != "lieferung"]
-    erledigt = st.multiselect("✅ Erledigte Schritte auswählen", options=alle_schritte, default=st.session_state.erledigt)
-    st.session_state.erledigt = erledigt
-    moeglich = finde_naechste_schritte(prozess, st.session_state.erledigt)
-    st.divider()
-    st.subheader("🔜 Mögliche nächste Schritte")
-    if moeglich:
-        st.success("Diese Schritte kannst du jetzt durchführen:")
-        for schritt in moeglich:
-            typ = prozess[schritt]["typ"]
-            st.markdown(f"✅ **{schritt}** *(Typ: {typ})*")
-    else:
-        st.info("Keine weiteren Schritte möglich – entweder alles erledigt oder Abhängigkeiten fehlen.")
+    st.markdown("_Keine weiteren Schritte verfügbar._")
