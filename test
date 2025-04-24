@@ -1,0 +1,4 @@
+import streamlit as st
+
+st.title("Hallo Streamlit!")
+st.write("Wenn du das hier siehst, funktioniert Streamlit.")
