@@ -69,14 +69,14 @@ def plot_raster(grid, active_modules):
                 color = 'red' if name in active_modules else 'lightgray'
                 fig.add_shape(
                     type="rect",
-                    x0=j * 1.5 + 0.2, y0=-i * 1.5 - 0.2,  # Abstand zwischen den Modulen
-                    x1=(j + 1) * 1.5 - 0.2, y1=-(i + 1) * 1.5 + 0.2,  # Abstand zwischen den Modulen
+                    x0=j * 2 + 0.5, y0=-i * 2 - 0.5,  # Abstand zwischen den Modulen
+                    x1=(j + 1) * 2 - 0.5, y1=-(i + 1) * 2 + 0.5,  # Abstand zwischen den Modulen
                     line=dict(color="black", width=2),
                     fillcolor=color
                 )
                 # Text zentriert im Rechteck
                 fig.add_annotation(
-                    x=(j * 1.5 + (j + 1) * 1.5) / 2, y=(-(i + 0.5)),
+                    x=(j * 2 + (j + 1) * 2) / 2, y=(-(i + 0.5)),
                     text=name,
                     showarrow=False,
                     font=dict(size=12),
@@ -90,10 +90,10 @@ def plot_raster(grid, active_modules):
             source_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == source)
             target_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == target)
             
-            # Die Pfeile an den Modulen vorbeigehen lassen
+            # Pfeile an den Modulen vorbeigehen lassen
             fig.add_annotation(
-                x=source_pos[1] * 1.5 + 0.5, y=-source_pos[0] * 1.5 - 1,
-                ax=target_pos[1] * 1.5 + 0.5, ay=-target_pos[0] * 1.5 - 1,
+                x=source_pos[1] * 2 + 1, y=-source_pos[0] * 2 - 1,
+                ax=target_pos[1] * 2 + 1, ay=-target_pos[0] * 2 - 1,
                 axref="x1", ayref="y1", xref="x1", yref="y1",
                 showarrow=True,
                 arrowhead=2,
