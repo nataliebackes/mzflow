@@ -69,7 +69,7 @@ def main():
     erledigte_schritte = st.sidebar.multiselect(
         "Welche Schritte wurden bereits erledigt?",
         options=[step for step in prozess if prozess[step]["typ"] != "lieferung"],
-        default=st.session_state.erledigt
+        default=st.session_state.erledigt or []  # Sicherstellen, dass dies eine Liste ist
     )
 
     # Speichern der Auswahl im Session-State
@@ -80,7 +80,7 @@ def main():
     selected_lieferungen = st.sidebar.multiselect(
         "Markiere Lieferungen, die eingetroffen sind",
         options=lieferungen,
-        default=[]
+        default=[]  # Default leer
     )
     
     # Die ausgewählten Lieferungen zu den erledigten Schritten hinzufügen
