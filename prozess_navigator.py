@@ -82,15 +82,15 @@ prozess = {
 def finde_naechste_schritte(prozess, erledigt):
     naechste = []
     for schritt, daten in prozess.items():
-        # Überprüfen, ob der Schritt "zwischenschritt" oder "endprodukt" ist und noch nicht erledigt wurde
+        # Überprüfen, ob der Schritt noch nicht erledigt ist und alle Abhängigkeiten erledigt sind
         if (
-            daten["typ"] != "lieferung"  # Keine Lieferungen
-            and schritt not in erledigt  # Der Schritt wurde noch nicht erledigt
-            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten müssen erledigt sein
+            daten["typ"] != "lieferung"  # Nur Zwischenschritte oder Endprodukte berücksichtigen
+            and schritt not in erledigt  # Der Schritt ist noch nicht erledigt
+            and all(dep in erledigt for dep in daten["abhaengig_von"])  # Alle Abhängigkeiten sind erledigt
         ):
             naechste.append(schritt)
     return naechste
-
+ 
 # ===================
 # Streamlit-App
 # ===================
