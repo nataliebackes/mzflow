@@ -1,5 +1,5 @@
 import streamlit as st
-import graphviz
+import plotly.graph_objects as go
 
 # Layout und Titel
 st.set_page_config(layout="wide")
@@ -58,41 +58,57 @@ grid = [
     ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "", ""]
 ]
 
-# Graphviz Graph generieren
-def build_graph(grid, active_modules):
-    def node_style(name):
-        if name in active_modules:
-            return 'color=red, penwidth=3'
-        typ = module_data[name]["typ"]
-        if typ == "lieferung":
-            return 'style=filled, fillcolor=lightblue'
-        elif typ == "zwischenschritt":
-            return 'style=filled, fillcolor=lightyellow'
-        elif typ == "endprodukt":
-            return 'style=filled, fillcolor=lightgreen'
-        return ''
+# Plotly-Diagramm generieren
+def plot_raster(grid, active_modules):
+    fig = go.Figure()
 
-    dot = 'digraph G {\n  rankdir=LR;\n  node [shape=box, width=1.5, height=1.0, fixedsize=true];\n'
-
-    # Subgraphs für Reihenfolge und feste Positionen
+    # Module als Rechtecke in Plotly einfügen
     for i, row in enumerate(grid):
-        dot += f'  subgraph cluster_row_{i} {{\n    rank=same;\n'
         for j, name in enumerate(row):
             if name:
-                dot += f'    "{name}" [{node_style(name)}];\n'
-            # Leere Felder werden als invisible Knoten behandelt
-            else:
-                dot += f'    "{i}_{j}" [style=invisible, width=0, height=0];\n'
-        dot += '  }\n'
+                color = 'red' if name in active_modules else 'lightgray'
+                fig.add_shape(
+                    type="rect",
+                    x0=j, y0=-i,
+                    x1=j + 1, y1=-(i + 1),
+                    line=dict(color="black", width=2),
+                    fillcolor=color
+                )
+                fig.add_annotation(
+                    x=(j + 0.5), y=-(i + 0.5),
+                    text=name,
+                    showarrow=False,
+                    font=dict(size=12),
+                    align="center"
+                )
 
-    # Kanten (Abhängigkeiten) hinzufügen
+    # Pfeile für Abhängigkeiten
     for target, info in module_data.items():
         for source in info["abhaengig_von"]:
-            style = 'color=red, penwidth=2' if source in active_modules else ''
-            dot += f'  "{source}" -> "{target}" [{style}];\n'
+            source_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == source)
+            target_pos = next((i, j) for i, row in enumerate(grid) for j, n in enumerate(row) if n == target)
+            
+            fig.add_annotation(
+                x=source_pos[1] + 0.5, y=-source_pos[0] - 0.5,
+                ax=target_pos[1] + 0.5, ay=-target_pos[0] - 0.5,
+                axref="x1", ayref="y1", xref="x1", yref="y1",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+                arrowcolor="red"
+            )
 
-    dot += '}'
-    return dot
+    # Layout für die Anzeige
+    fig.update_layout(
+        xaxis=dict(showgrid=False, zeroline=False),
+        yaxis=dict(showgrid=False, zeroline=False),
+        width=800, height=600,
+        title="Modulübersicht",
+        showlegend=False
+    )
 
-# Visualisierung anzeigen
-st.graphviz_chart(build_graph(grid, st.session_state.active_modules))
+    return fig
+
+# Plotly-Grafik anzeigen
+st.plotly_chart(plot_raster(grid, st.session_state.active_modules))
