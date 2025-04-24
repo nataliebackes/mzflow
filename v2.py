@@ -74,12 +74,14 @@ def plot_raster(grid, active_modules):
                     line=dict(color="black", width=2),
                     fillcolor=color
                 )
+                # Text zentriert im Rechteck
                 fig.add_annotation(
                     x=(j * 1.5 + (j + 1) * 1.5) / 2, y=(-(i + 0.5)),
                     text=name,
                     showarrow=False,
                     font=dict(size=12),
-                    align="center"
+                    align="center",
+                    valign="middle"  # Text vertikal zentrieren
                 )
 
     # Pfeile für Abhängigkeiten
