@@ -36,13 +36,16 @@ module_data = {
 
 # Modul-Grid (8 Spalten pro Zeile)
 grid = [
-    ["MFB von Herter", "Fragebögen", "Ziel DSB von Destatis", "Variste prüf", "Metadatenreport", "Testdaten", "Testdaten", ""],
-    ["MFB Spalten A-M + Operatoren", "MFB mit Spalten P-Q", "", "Vergröberungen + Korrekturen", "Metadatenreport final", "Inhaltliche Prüfung", "Missingdefinitionen", "Missy Texte"],
-    ["", "Schlüsselverzeichnis und IHB", "Ziel DSB", "DHB Kommentare 2", "Tabelle Erhebungsprogramme", "Technische Prüfung", "Tools", "Missy Veröffentlichung"],
-    ["MFB", "", "", "", "", "DHB", "", "Missy Variablenmatrix"],
-    ["DHB Kommentare 1", "Routinen für Filtermissings an IT NRW", "ZP Matrix + Thematische Liste", "", "", "", "", ""],
-    ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "", ""]
+    ["MFB von Herter", "MFB Spalten A-M + Operatoren", "", "MFB", "DHB Kommentare 1", ""],
+    ["Fragebögen", "MFB mit Spalten P-Q", "Schlüsselverzeichnis und IHB", "", "Routinen für Filtermissings an IT NRW", "Fachserien Tabellen vorbereiten"],
+    ["Ziel DSB von Destatis", "", "Ziel DSB", "", "ZP Matrix + Thematische Liste", ""],
+    ["Variste prüf", "Vergröberungen + Korrekturen", "DHB Kommentare 2", "", "", ""],
+    ["Metadatenreport", "Metadatenreport final", "Tabelle Erhebungsprogramme", "", "", ""],
+    ["Testdaten", "Inhaltliche Prüfung", "Technische Prüfung", "DHB", "", ""],
+    ["Testdaten", "Missingdefinitionen", "Tools", "", "", ""],
+    ["", "Missy Texte", "Missy Veröffentlichung", "Missy Variablenmatrix", "", ""],
 ]
+
 
 # User-Auswahl
 if "active_modules" not in st.session_state:
