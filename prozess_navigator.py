@@ -64,7 +64,7 @@ prozess = {
 "Tabelle Erhebungsprogramme":        {"typ": "endprodukt",     "abhaengig_von": ["Metadatenreport"]},
  
 
-"Inhaltliche Prüfung":               {"typ": "endprodukt",     "abhaengig_von": ["Testdaten","Fachserien Tabellen vorbereiten]"},
+"Inhaltliche Prüfung":               {"typ": "endprodukt",     "abhaengig_von": ["Testdaten","Fachserien Tabellen vorbereiten"]},
  
 "Technische Prüfung":                {"typ": "endprodukt",     "abhaengig_von": ["Testdaten"]},
  
