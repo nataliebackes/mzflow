@@ -7,16 +7,18 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Raster-Layout
 grid = [
-    ["MFB von Herter", "Fragebögen", "Ziel DSB von Destatis", "Variste prüf", "Metadatenreport", "Testdaten", "Testdaten", ""],
-    ["MFB Spalten A-M + Operatoren", "MFB mit Spalten P-Q", "", "Vergröberungen + Korrekturen", "Metadatenreport final", "Inhaltliche Prüfung", "Missingdefinitionen", "Missy Texte"],
-    ["", "Schlüsselverzeichnis und IHB", "Ziel DSB", "DHB Kommentare 2", "Tabelle Erhebungsprogramme", "Technische Prüfung", "Tools", "Missy Veröffentlichung"],
-    ["MFB", "", "", "", "", "DHB", "", "Missy Variablenmatrix"],
-    ["DHB Kommentare 1", "Routinen für Filtermissings an IT NRW", "ZP Matrix + Thematische Liste", "", "", "", "", ""],
-    ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "", ""]
+    ["MFB von Herter", "Fragebögen", "Ziel DSB von Destatis", "Variste prüf", "Metadatenreport", "Testdaten", "", ""],
+    ["MFB Spalten A-M + Operatoren", "MFB mit Spalten P-Q", "", "Vergröberungen + Korrekturen", "Metadatenreport final", "Technische Prüfung", "finaler Datensatz", "Missy Texte"],
+    ["MFB", "Schlüsselverzeichnis und IHB", "Ziel DSB", "DHB Kommentare 2", "Tabelle Erhebungsprogramme", "Inhaltliche Prüfung", "Missy Veröffentlichung", ""],
+    ["DHB Kommentare 1", "Routinen für Filtermissings an IT NRW", "ZP Matrix + Thematische Liste", "", "", "", "Tools", "Missy Variablenmatrix"],
+    ["", "Fachserien Tabellen vorbereiten", "", "", "", "", "DHB", ""],
+    ["", "", "", "", "", "Varliste mit allen Infos", "", ""]
 ]
 
 # Modulinformationen
 module_data = {
+    "Varliste mit allen Infos": {"typ": "zwischenschritt", "abhaengig_von": ["MFB", "Variste prüf"]},
+    "finaler Datensatz": {"typ": "endprodukt", "abhaengig_von": ["Technische Prüfung", "Inhaltliche Prüfung"]},
     "MFB von Herter": {"typ": "lieferung", "abhaengig_von": []},
     "Fragebögen": {"typ": "lieferung", "abhaengig_von": []},
     "Ziel DSB von Destatis": {"typ": "lieferung", "abhaengig_von": []},
@@ -28,17 +30,17 @@ module_data = {
     "Vergröberungen + Korrekturen": {"typ": "zwischenschritt", "abhaengig_von": ["Variste prüf"]},
     "Metadatenreport final": {"typ": "endprodukt", "abhaengig_von": ["Metadatenreport"]},
     "Inhaltliche Prüfung": {"typ": "endprodukt", "abhaengig_von": ["Testdaten", "Fachserien Tabellen vorbereiten"]},
-    "Missingdefinitionen": {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
+    "Missingdefinitionen": {"typ": "zwischenschritt", "abhaengig_von": ["finaler Datensatz"]},
     "Missy Texte": {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
     "Schlüsselverzeichnis und IHB": {"typ": "lieferung", "abhaengig_von": []},
     "Ziel DSB": {"typ": "endprodukt", "abhaengig_von": ["Ziel DSB von Destatis", "MFB mit Spalten P-Q", "Fragebögen", "Schlüsselverzeichnis und IHB"]},
     "DHB Kommentare 2": {"typ": "zwischenschritt", "abhaengig_von": ["Vergröberungen + Korrekturen"]},
     "Tabelle Erhebungsprogramme": {"typ": "endprodukt", "abhaengig_von": ["Metadatenreport"]},
     "Technische Prüfung": {"typ": "endprodukt", "abhaengig_von": ["Testdaten"]},
-    "Tools": {"typ": "zwischenschritt", "abhaengig_von": ["Testdaten"]},
+    "Tools": {"typ": "zwischenschritt", "abhaengig_von": ["finaler Datensatz"]},
     "Missy Veröffentlichung": {"typ": "endprodukt", "abhaengig_von": ["Missy Variablenmatrix", "Missy Texte"]},
     "MFB": {"typ": "endprodukt", "abhaengig_von": ["MFB mit Spalten P-Q", "Schlüsselverzeichnis und IHB", "Ziel DSB"]},
-    "DHB": {"typ": "endprodukt", "abhaengig_von": ["Testdaten", "DHB Kommentare 2", "DHB Kommentare 1"]},
+    "DHB": {"typ": "endprodukt", "abhaengig_von": ["Testdaten", "DHB Kommentare 2", "DHB Kommentare 1", "Varliste mit allen Infos", "finaler Datensatz"]},
     "Missy Variablenmatrix": {"typ": "endprodukt", "abhaengig_von": ["ZP Matrix + Thematische Liste"]},
     "DHB Kommentare 1": {"typ": "zwischenschritt", "abhaengig_von": ["MFB"]},
     "Routinen für Filtermissings an IT NRW": {"typ": "zwischenschritt", "abhaengig_von": ["MFB", "Ziel DSB"]},
